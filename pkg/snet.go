@@ -12,13 +12,13 @@ func (s *snet) GetConfig() map[string]string {
 	return s.GetConfig()
 }
 
-func (s *service) NewServer() {
+// func (s *service) NewServer() {
 
-}
+// }
 
-func (s *service) NewClient() {
+// func (s *service) NewClient() {
 
-}
+// }
 
 type server struct {
 }
