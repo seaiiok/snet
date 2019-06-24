@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package pb;
+
+
+    message msg {
+        repeated row datas=1;
+    }
+
+    message row {
+        string stdID=1;
+        string keyNo=2;
+        string status1=3;
+        string status2=4;
+
+    }
