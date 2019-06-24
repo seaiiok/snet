@@ -1,156 +1,105 @@
 package pkg
 
-// import (
-// 	"context"
-// 	"fmt"
-// 	"net"
-// 	"snet/iface"
-// )
+import (
+	"errors"
+	"fmt"
+	"net"
+	"snet/iface"
+)
 
-// type Server struct {
-// 	netWork     string
-// 	iP          string
-// 	port        int
-// 	contx       context.Context
-// 	contxCancel context.CancelFunc
-// }
+const (
+	netWork = "tcp4"
+)
 
-// func (s *Server) Start() {
+type Server struct {
+	Conf         map[string]string
+	onConnect    func(*net.TCPConn)
+	onDisConnect func(*net.TCPConn)
+	onMessage    func(*net.TCPConn, iface.IPack)
+	clients      map[string]client
+}
 
-// 	tcpAddr, err := net.ResolveTCPAddr(s.netWork, fmt.Sprintf("%s:%d", s.iP, s.port))
-// 	if err != nil {
-// 		fmt.Println("Server Start:", err)
-// 		return
-// 	}
-// 	l, err := net.ListenTCP(s.netWork, tcpAddr)
-// 	if err != nil {
-// 		fmt.Println("Server Listen:", err)
-// 		return
-// 	}
-// 	fmt.Println("Server ON:", s.iP, ":", s.port)
+type client struct {
+	conn *net.TCPConn
+}
 
-// 	newClients := newClients(s.contx)
-// 	go newClients.Start()
+func (s *Server) Start() {
 
-// 	go func() {
-// 		for {
-// 			conn, err := l.AcceptTCP()
-// 			if err != nil {
-// 				fmt.Println("Server AcceptTcp:", err)
-// 			}
+	tcpAddr, err := net.ResolveTCPAddr(netWork, fmt.Sprintf("%s:%s", s.Conf["host"], s.Conf["port"]))
+	if err != nil {
+		fmt.Println("Server Start:", err)
+		return
+	}
+	l, err := net.ListenTCP(netWork, tcpAddr)
+	if err != nil {
+		fmt.Println("Server Listen:", err)
+		return
+	}
+	fmt.Println("Server ON:", s.Conf["host"], ":", s.Conf["port"])
 
-// 			select {
-// 			case <-s.ServerContext.Contx.Done():
-// 				return
-// 			default:
-// 				newClients.AddClient(conn)
-// 			}
-// 		}
-// 	}()
+	go func() {
+		for {
+			conn, err := l.AcceptTCP()
+			if err != nil {
+				fmt.Println("Server AcceptTcp:", err)
+				continue
+			} else {
+				s.onConnect(conn)
+				s.addClient(conn)
+			}
+			p := &Pack{}
+			go s.onMessage(conn, p)
+		}
+	}()
+}
 
-// }
+func (s *Server) Stop() {
 
-// func (s *Server) Stop() {
+}
 
-// }
+func (s *Server) OnConnect(onConnect func(*net.TCPConn)) {
+	s.onConnect = onConnect
+}
 
-// func NewServer() iface.IServer {
-// 	ctx, cancel := context.WithCancel(context.Background())
+func (s *Server) OnMessage(onMessage func(*net.TCPConn, iface.IPack)) {
+	s.onMessage = onMessage
+}
 
-// 	return &Server{
-// 		NetWork: "tcp4",
-// 		IP:      "127.0.0.1",
-// 		Port:    777,
-// 		ServerContext: &Context{
-// 			Contx:       ctx,
-// 			ContxCancel: cancel,
-// 		},
-// 	}
-// }
-// const (
-// 	netWork = "tcp4"
-// )
+func (s *Server) OnDisConnect(onDisConnect func(*net.TCPConn)) {
+	s.onDisConnect = onDisConnect
+}
 
-// type Server struct {
-// 	Conf map[string]string
-// }
+func onMessager(conn *net.TCPConn) {
 
-// func (s *Server) ServerStart() {
-// 	tcpAddr, err := net.ResolveTCPAddr(netWork, fmt.Sprintf("%s:%d", Config.Host, Config.port))
-// 	if err != nil {
-// 		fmt.Println("Server Start:", err)
-// 		return
-// 	}
-// 	l, err := net.ListenTCP(netWork, tcpAddr)
-// 	if err != nil {
-// 		fmt.Println("Server Listen:", err)
-// 		return
-// 	}
-// 	fmt.Println("Server ON:", Config.Host, ":", Config.Port)
+}
 
-// 	newClients := newClients(s.contx)
-// 	go newClients.Start()
+func (s *Server) addClient(conn *net.TCPConn) {
+	clientName := conn.RemoteAddr().String()
+	newClient := client{
+		conn: conn,
+	}
+	if _, found := s.clients[clientName]; found != true {
+		s.clients[clientName] = newClient
+		// return nil
+	}
+	// return errors.New("this client is exist,add client failed")
+}
 
-// 	go func() {
-// 		for {
-// 			conn, err := l.AcceptTCP()
-// 			if err != nil {
-// 				fmt.Println("Server AcceptTcp:", err)
-// 			}
+func (s *Server) deleteClient(clientName string) error {
+	if _, found := s.clients[clientName]; found == true {
+		delete(s.clients, clientName)
+		return nil
+	}
+	return errors.New("this client is not exist,delete client failed")
+}
 
-// 			select {
-// 			case <-s.ServerContext.Contx.Done():
-// 				return
-// 			default:
-// 				newClients.AddClient(conn)
-// 			}
-// 		}
-// 	}()
-// }
+type Pack struct {
+}
 
-// func (s *Server) ServerStart() {
-// 	tcpAddr, err := net.ResolveTCPAddr(netWork, fmt.Sprintf("%s:%s", s.Conf["host"], s.Conf["port"]))
-// 	if err != nil {
-// 		fmt.Println("Server Start:", err)
-// 		return
-// 	}
-// 	l, err := net.ListenTCP(netWork, tcpAddr)
-// 	if err != nil {
-// 		fmt.Println("Server Listen:", err)
-// 		return
-// 	}
-// 	fmt.Println("Server ON:", s.Conf["host"], ":", s.Conf["port"])
+func (p *Pack) Packet() {
 
-// 	go func() {
-// 		for {
-// 			conn, err := l.AcceptTCP()
-// 			if err != nil {
-// 				fmt.Println("Server AcceptTcp:", err)
-// 			}
-// 			fmt.Println(conn.RemoteAddr().String())
-// 		}
-// 	}()
-// }
+}
 
-// func (s *Server) ServerStop() {
+func (p *Pack) UnPacket() {
 
-// }
-
-// // ------------------------------------------------------------------
-// type Connections struct {
-// }
-
-// type Connection struct {
-// }
-
-// func (c *Connections) AddClient(conn *net.TCPConn) error {
-// 	return nil
-// }
-
-// func (c *Connections) DeleteClient(clientKey string) error {
-// 	return nil
-// }
-
-// func NewConnections() iface.IConnections {
-// 	return &Connections{}
-// }
+}
