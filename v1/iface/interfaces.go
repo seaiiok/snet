@@ -1,13 +1,18 @@
 package iface
 
-type ISnet interface {
-	GetConfig() map[string]string
-	NewServer() IServer
-}
+import "net"
 
 type IServer interface {
-	ServerStart()
-	ServerStop()
+	Start()
+	Stop()
+	OnConnect(func(*net.TCPConn))
+	OnMessage(func(*net.TCPConn, IPack))
+	OnDisConnect(func(*net.TCPConn))
+}
+
+type IPack interface {
+	Packet()
+	UnPacket()
 }
 
 // type IClient interface {
