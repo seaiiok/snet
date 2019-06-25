@@ -11,22 +11,25 @@ const (
 	netWork = "tcp4"
 )
 
-type Snet struct {
-	conf         string
-	onConnect    func(*net.TCPConn)
-	onDisConnect func(*net.TCPConn)
-	onMessage    func(*net.TCPConn, string)
+type snet struct {
+	onConnect     func(*Connection)
+	onDisConnect  func(*Connection)
+	onSendMessage func(*Connection)
+	onRecvMessage func(*Connection, Package)
 }
 
-func New(addr string) *Snet {
-	snet := &Snet{
-		conf: "ip+port",
-	}
+type Connection struct {
+	Conn *net.TCPConn
+	Snet *snet
+}
+
+func New() *snet {
+	snet := new(snet)
 	snet.start()
 	return snet
 }
 
-func (s *Snet) start() {
+func (s *snet) start() {
 	tcpAddr, err := net.ResolveTCPAddr(netWork, fmt.Sprintf("%s:%s", iP, port))
 	if err != nil {
 		fmt.Println("Server Start:", err)
@@ -46,28 +49,27 @@ func (s *Snet) start() {
 				fmt.Println("Server AcceptTcp:", err)
 				continue
 			}
+			newConn := new(Connection)
+			newConn.Conn = conn
+			newConn.Snet = s
+
 			fmt.Println(conn.RemoteAddr().String())
-			s.onConnect(conn)
+			s.onConnect(newConn)
 
 			buf := make([]byte, 512)
+			pge := Package{}
 
 			go func() {
 				for {
 					cnt, err := conn.Read(buf)
 					if err != nil {
 						fmt.Println(err)
-						s.onDisConnect(conn)
-						return
-					}
-					s.onMessage(conn, string(buf[:cnt]))
-
-					_, err = conn.Write(buf[:cnt])
-					if err != nil {
-						fmt.Println(err)
-						s.onDisConnect(conn)
+						s.onDisConnect(newConn)
 						return
 					}
 
+					go s.onRecvMessage(newConn, pge.UnPack(buf[:cnt]))
+					go s.onSendMessage(newConn)
 				}
 
 			}()
@@ -76,14 +78,27 @@ func (s *Snet) start() {
 	}()
 }
 
-func (s *Snet) OnConnect(onConnect func(conn *net.TCPConn)) {
+func (s *snet) OnConnect(onConnect func(conn *Connection)) {
 	s.onConnect = onConnect
 }
 
-func (s *Snet) OnDisConnect(onDisConnect func(conn *net.TCPConn)) {
+func (s *snet) OnDisConnect(onDisConnect func(conn *Connection)) {
 	s.onDisConnect = onDisConnect
 }
 
-func (s *Snet) OnMessage(onMessage func(conn *net.TCPConn, msg string)) {
-	s.onMessage = onMessage
+func (s *snet) OnRecvMessage(onRecvMessage func(conn *Connection, msg Package)) {
+	s.onRecvMessage = onRecvMessage
+}
+
+func (s *snet) OnSendMessage(onSendMessage func(conn *Connection)) {
+	s.onSendMessage = onSendMessage
+}
+
+func (c *Connection) OnSendMsg(msg Package) {
+	_, err := c.Conn.Write(msg.Pack())
+	if err != nil {
+		fmt.Println(err)
+		c.Snet.onDisConnect(c)
+		return
+	}
 }
