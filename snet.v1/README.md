@@ -106,20 +106,20 @@ func makeSomeMsg(id byte) Package {
 
 
 ```
-
-=== RUN   TestSnet
-------------接收数据------------
-ID: 0
-Key长度: 29 Key内容: [golang tcp]
-Data长度: 59 Data内容: [[1 data1] [2 data2] [2 data2]]
-------------接收数据------------
-ID: 1
-Key长度: 29 Key内容: [golang tcp]
-Data长度: 59 Data内容: [[1 data1] [2 data2] [2 data2]]
-------------接收数据------------
-ID: 2
-Key长度: 29 Key内容: [golang tcp]
-Data长度: 59 Data内容: [[1 data1] [2 data2] [2 data2]]
---- PASS: TestSnet (1.00s)
+result
+  === RUN   TestSnet
+  ------------接收数据------------
+  ID: 0
+  Key长度: 29 Key内容: [golang tcp]
+  Data长度: 59 Data内容: [[1 data1] [2 data2] [2 data2]]
+  ------------接收数据------------
+  ID: 1
+  Key长度: 29 Key内容: [golang tcp]
+  Data长度: 59 Data内容: [[1 data1] [2 data2] [2 data2]]
+  ------------接收数据------------
+  ID: 2
+  Key长度: 29 Key内容: [golang tcp]
+  Data长度: 59 Data内容: [[1 data1] [2 data2] [2 data2]]
+  --- PASS: TestSnet (1.00s)
 
 
