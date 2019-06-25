@@ -7,8 +7,6 @@ import (
 )
 
 const (
-	iP      = "127.0.0.1"
-	port    = "495"
 	netWork = "tcp4"
 )
 
@@ -24,14 +22,17 @@ type Connection struct {
 	Snet *snet
 }
 
-func New() *snet {
+func New(a ...string) *snet {
 	snet := new(snet)
-	snet.start()
-	return snet
+	if len(a) >= 2 {
+		snet.start(a[0], a[1])
+		return snet
+	}
+	panic("server config panic")
 }
 
-func (s *snet) start() {
-	tcpAddr, err := net.ResolveTCPAddr(netWork, fmt.Sprintf("%s:%s", iP, port))
+func (s *snet) start(ip, port string) {
+	tcpAddr, err := net.ResolveTCPAddr(netWork, fmt.Sprintf("%s:%s", ip, port))
 	if err != nil {
 		fmt.Println("Server Start:", err)
 		return
