@@ -2,12 +2,13 @@ package snet
 
 import (
 	"fmt"
+	"io"
 	"net"
 )
 
 const (
 	iP      = "127.0.0.1"
-	port    = "494"
+	port    = "495"
 	netWork = "tcp4"
 )
 
@@ -40,7 +41,6 @@ func (s *snet) start() {
 		fmt.Println("Server Listen:", err)
 		return
 	}
-	fmt.Println("Server ON:", iP, ":", port)
 
 	go func() {
 		for {
@@ -53,7 +53,6 @@ func (s *snet) start() {
 			newConn.Conn = conn
 			newConn.Snet = s
 
-			fmt.Println(conn.RemoteAddr().String())
 			s.onConnect(newConn)
 
 			buf := make([]byte, 512)
@@ -63,7 +62,11 @@ func (s *snet) start() {
 				for {
 					cnt, err := conn.Read(buf)
 					if err != nil {
-						fmt.Println(err)
+						if err == io.EOF {
+							// fmt.Println("Read:",err)
+							return
+						}
+						fmt.Println("Read:", err)
 						s.onDisConnect(newConn)
 						return
 					}
@@ -97,7 +100,7 @@ func (s *snet) OnSendMessage(onSendMessage func(conn *Connection)) {
 func (c *Connection) OnSendMsg(msg Package) {
 	_, err := c.Conn.Write(msg.Pack())
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Write:", err)
 		c.Snet.onDisConnect(c)
 		return
 	}

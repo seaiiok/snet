@@ -1,29 +1,96 @@
 package snet
 
 import (
-	"encoding/json"
 	"fmt"
+	"net"
 	"testing"
+	"time"
 )
 
-func TestServer(t *testing.T) {
-	type stu struct {
-		Id   int
-		Name string
-	}
-	s := stu{
-		Id:   1,
-		Name: "json",
-	}
-	b, err := json.Marshal(s)
-	if err != nil {
-		fmt.Println(err)
-	}
-	x := stu{}
+func TestSnet(t *testing.T) {
 
-	err = json.Unmarshal(b, &x)
+	//启动Tcp服务器
+	serverGo()
+
+	for i := 0; i < 3; i++ {
+		clientGo(byte(i))
+	}
+	time.Sleep(1 * time.Second)
+}
+
+func BenchmarkSnet(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		clientGo(0)
+	}
+}
+
+func serverGo() {
+	s := New()
+	s.OnConnect(func(conn *Connection) {
+		//建立连接事件
+	})
+
+	s.OnDisConnect(func(conn *Connection) {
+		//断开连接事件
+	})
+
+	s.OnSendMessage(func(conn *Connection) {
+		//向客户端发送数据
+		// conn.OnSendMsg(snet.Package{})
+	})
+
+	s.OnRecvMessage(func(conn *Connection, msg Package) {
+		//收到客户端数据
+		//fmt.Println(msg)
+		conn.OnSendMsg(msg)
+	})
+}
+
+//建一个客户端
+func clientGo(id byte) {
+	conn, err := net.Dial("tcp", "127.0.0.1:495")
+	if err != nil {
+		fmt.Println("client dial err, exit!")
+		return
+	}
+
+	//封包
+	msg1 := makeSomeMsg(id)
+	b := msg1.Pack()
+
+	_, err = conn.Write(b)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(x)
+
+	buf := make([]byte, 1024)
+	cnt, err := conn.Read(buf)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	//解包
+	msg2 := Package{}
+	msg := msg2.UnPack(buf[:cnt])
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("------------接收数据------------")
+	fmt.Println("ID:", msg.ID)
+	fmt.Println("Key长度:", msg.KeyLen, "Key内容:", msg.Key)
+	fmt.Println("Data长度:", msg.DataLen, "Data内容:", msg.Data)
+
+}
+
+//制造一些数据
+func makeSomeMsg(id byte) Package {
+	return Package{
+		ID:      id,
+		KeyLen:  0,
+		DataLen: 0,
+		Key:     []string{"golang", "tcp"},
+		Data:    [][]string{{"1", "data1"}, {"2", "data2"}, {"2", "data2"}},
+	}
 }
