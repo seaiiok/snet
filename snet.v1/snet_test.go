@@ -12,6 +12,7 @@ func TestSnet(t *testing.T) {
 	//启动Tcp服务器
 	serverGo()
 
+	//启动一些客户端
 	for i := 0; i < 3; i++ {
 		clientGo(byte(i))
 	}
