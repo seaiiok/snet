@@ -14,13 +14,12 @@ type snet struct {
 	onConnect     func(*Connection)
 	onDisConnect  func(*Connection)
 	onSendMessage func(*Connection)
-	onRecvMessage func(*Connection, []byte)
+	onRecvMessage func(*Connection, *Package)
 }
 
 type Connection struct {
 	Conn *net.TCPConn
 	Snet *snet
-	p    Package
 }
 
 func New(a ...string) *snet {
@@ -57,7 +56,8 @@ func (s *snet) start(ip, port string) {
 
 			s.onConnect(newConn)
 
-			buf := make([]byte, 1024)
+			buf := make([]byte, 512)
+			pge := &Package{}
 
 			go func() {
 				for {
@@ -72,7 +72,7 @@ func (s *snet) start(ip, port string) {
 						return
 					}
 
-					go s.onRecvMessage(newConn, newConn.UnPack(buf[:cnt]))
+					go s.onRecvMessage(newConn, pge.UnPack(buf[:cnt]))
 					go s.onSendMessage(newConn)
 				}
 
@@ -90,7 +90,7 @@ func (s *snet) OnDisConnect(onDisConnect func(conn *Connection)) {
 	s.onDisConnect = onDisConnect
 }
 
-func (s *snet) OnRecvMessage(onRecvMessage func(conn *Connection, msg []byte)) {
+func (s *snet) OnRecvMessage(onRecvMessage func(conn *Connection, msg *Package)) {
 	s.onRecvMessage = onRecvMessage
 }
 
@@ -98,19 +98,11 @@ func (s *snet) OnSendMessage(onSendMessage func(conn *Connection)) {
 	s.onSendMessage = onSendMessage
 }
 
-func (c *Connection) OnSendMsg(msg []byte) {
-	_, err := c.Conn.Write(c.p.Pack(msg))
+func (c *Connection) OnSendMsg(msg *Package) {
+	_, err := c.Conn.Write(msg.Pack())
 	if err != nil {
 		fmt.Println("Write:", err)
 		c.Snet.onDisConnect(c)
 		return
 	}
-}
-
-func (c *Connection) Pack(msg []byte) []byte {
-	return c.p.Pack(msg)
-}
-
-func (c *Connection) UnPack(msg []byte) []byte {
-	return c.p.UnPack(msg)
 }
