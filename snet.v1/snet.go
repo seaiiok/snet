@@ -23,13 +23,10 @@ type Connection struct {
 	p    Package
 }
 
-func New(a ...string) *snet {
+func New(ip, port string) *snet {
 	snet := new(snet)
-	if len(a) >= 2 {
-		snet.start(a[0], a[1])
-		return snet
-	}
-	panic("server config panic")
+	snet.start(ip, port)
+	return snet
 }
 
 func (s *snet) start(ip, port string) {
