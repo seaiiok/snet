@@ -12,58 +12,64 @@ func TestSnet(t *testing.T) {
 	//启动Tcp服务器
 	serverGo()
 
-	//启动一些客户端
-	for i := 0; i < 3; i++ {
-		clientGo(byte(i))
-	}
+	//启动客户端
+	clientGo()
 	time.Sleep(1 * time.Second)
 }
 
 func BenchmarkSnet(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		clientGo(0)
+		clientGo()
 	}
 }
 
 func serverGo() {
-	s := New()
+	s := New("localhost", "496")
 	s.OnConnect(func(conn *Connection) {
 		//建立连接事件
+		fmt.Println("客服端建立连接:", conn.Conn.RemoteAddr())
 	})
 
 	s.OnDisConnect(func(conn *Connection) {
 		//断开连接事件
+		fmt.Println("客服端断开连接:", conn.Conn.RemoteAddr())
 	})
 
 	s.OnSendMessage(func(conn *Connection) {
 		//向客户端发送数据
-		// conn.OnSendMsg(snet.Package{})
+		// conn.OnSendMsg([]byte("msg..."))
 	})
 
-	s.OnRecvMessage(func(conn *Connection, msg Package) {
+	s.OnRecvMessage(func(conn *Connection, msg []byte) {
 		//收到客户端数据
-		//fmt.Println(msg)
+		fmt.Println("服务器接收数据:", string(msg))
+		msg = append(msg, []byte("Ok!")...)
 		conn.OnSendMsg(msg)
 	})
 }
 
-//建一个客户端
-func clientGo(id byte) {
-	conn, err := net.Dial("tcp", "127.0.0.1:495")
+//客户端
+func clientGo() {
+	conn, err := net.Dial("tcp", "127.0.0.1:496")
 	if err != nil {
 		fmt.Println("client dial err, exit!")
 		return
 	}
 
-	//封包
-	msg1 := makeSomeMsg(id)
-	b := msg1.Pack()
+	//制造Demo数据
+	msg1 := makeSomeMsg()
 
-	_, err = conn.Write(b)
+	//封包
+	pack1 := Package{}
+	b1 := pack1.Pack(msg1)
+
+	//发送数据
+	_, err = conn.Write(b1)
 	if err != nil {
 		fmt.Println(err)
 	}
 
+	//接受数据
 	buf := make([]byte, 1024)
 	cnt, err := conn.Read(buf)
 	if err != nil {
@@ -73,25 +79,15 @@ func clientGo(id byte) {
 
 	//解包
 	msg2 := Package{}
-	msg := msg2.UnPack(buf[:cnt])
+	b2 := msg2.UnPack(buf[:cnt])
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("------------接收数据------------")
-	fmt.Println("ID:", msg.ID)
-	fmt.Println("Key长度:", msg.KeyLen, "Key内容:", msg.Key)
-	fmt.Println("Data长度:", msg.DataLen, "Data内容:", msg.Data)
-
+	fmt.Println("客服端接收数据:", string(b2))
 }
 
 //制造一些数据
-func makeSomeMsg(id byte) Package {
-	return Package{
-		ID:      id,
-		KeyLen:  0,
-		DataLen: 0,
-		Key:     []string{"golang", "tcp"},
-		Data:    [][]string{{"1", "data1"}, {"2", "data2"}, {"2", "data2"}},
-	}
+func makeSomeMsg() []byte {
+	return []byte("this is a test message!")
 }

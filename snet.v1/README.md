@@ -7,22 +7,22 @@
 ```Go
 
 func serverGo() {
-	s := New()
-	s.OnConnect(func(conn *Connection) {
+	s := New("localhost","496")
+	s.OnConnect(func(conn *snet.Connection) {
 		//建立连接事件
 	})
 
-	s.OnDisConnect(func(conn *Connection) {
+	s.OnDisConnect(func(conn *snet.Connection) {
 		//断开连接事件
 	})
 
-	s.OnSendMessage(func(conn *Connection) {
+	s.OnSendMessage(func(conn *snet.Connection) {
 		//向客户端发送数据
-		// conn.OnSendMsg(snet.Package{})
+		// conn.OnSendMsg([]byte{"msg..."})
 	})
 
-	s.OnRecvMessage(func(conn *Connection, msg Package) {
+	s.OnRecvMessage(func(conn *snet.Connection, msg []byte) {
 		//收到客户端数据
-		//fmt.Println(msg)
+		//fmt.Println(string(msg))
 	})
 }
