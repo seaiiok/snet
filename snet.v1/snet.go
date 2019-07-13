@@ -61,10 +61,10 @@ func (s *snet) start(ip, port string) {
 					cnt, err := conn.Read(buf)
 					if err != nil {
 						if err == io.EOF {
-							// fmt.Println("Read:",err)
+							s.onDisConnect(newConn)
 							return
 						}
-						fmt.Println("Read:", err)
+						// fmt.Println("Read:", err)
 						s.onDisConnect(newConn)
 						return
 					}
@@ -98,7 +98,7 @@ func (s *snet) OnSendMessage(onSendMessage func(conn *Connection)) {
 func (c *Connection) OnSendMsg(msg []byte) {
 	_, err := c.Conn.Write(c.p.Pack(msg))
 	if err != nil {
-		fmt.Println("Write:", err)
+		// fmt.Println("Write:", err)
 		c.Snet.onDisConnect(c)
 		return
 	}
