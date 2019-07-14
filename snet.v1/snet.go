@@ -17,12 +17,14 @@ type snet struct {
 	onRecvMessage func(*Connection, []byte)
 }
 
+//Connection 连接对象
 type Connection struct {
 	Conn *net.TCPConn
 	Snet *snet
 	p    Package
 }
 
+//New snet对象
 func New(ip, port string) *snet {
 	snet := new(snet)
 	snet.start(ip, port)
@@ -95,6 +97,7 @@ func (s *snet) OnSendMessage(onSendMessage func(conn *Connection)) {
 	s.onSendMessage = onSendMessage
 }
 
+//OnSendMsg 发送消息
 func (c *Connection) OnSendMsg(msg []byte) {
 	_, err := c.Conn.Write(c.p.Pack(msg))
 	if err != nil {
@@ -104,10 +107,12 @@ func (c *Connection) OnSendMsg(msg []byte) {
 	}
 }
 
+//Pack 封包
 func (c *Connection) Pack(msg []byte) []byte {
 	return c.p.Pack(msg)
 }
 
+//UnPack 解包
 func (c *Connection) UnPack(msg []byte) []byte {
 	return c.p.UnPack(msg)
 }
