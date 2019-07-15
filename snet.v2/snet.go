@@ -73,9 +73,8 @@ func (s *snet) start(ip, port string) {
 					}
 
 					go s.onRecvMessage(newConn, pge.UnPack(buf[:cnt]))
-					go s.onSendMessage(newConn)
 				}
-
+				go s.onSendMessage(newConn)
 			}()
 
 		}
