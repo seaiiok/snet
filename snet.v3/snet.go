@@ -60,6 +60,6 @@ func (s *Snet) Stop() {
 
 }
 
-func (s *Snet) AddConnection(name string, connection iface.IConnection) {
+func (s *Snet) AddConnection(connection iface.IConnection) {
 	s.Conn = connection
 }
