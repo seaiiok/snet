@@ -1,7 +1,6 @@
 package snet
 
 import (
-	"fmt"
 	"gcom/gcmd"
 	"net"
 	"testing"
@@ -32,7 +31,7 @@ type Client struct {
 
 func serverGo() {
 	c := &Client{}
-	s := NewServer("localhost", 496)
+	s := NewServer("localhost", "496")
 	s.AddConnection(c)
 	s.Serve()
 }
@@ -53,32 +52,32 @@ func (c *Client) OnSendMessage(conn *net.TCPConn) {
 
 }
 
+func (c *Client) OnLocalCommand(conn *net.TCPConn, cmd []byte, msg []byte) {
+	gcmd.Println(gcmd.Ok, "本地命令:", string(cmd), string(msg))
+}
+
 // //客户端
 func clientGo() {
-	conn, err := net.Dial("tcp", "127.0.0.1:496")
+	conn, err := net.Dial("tcp", ":496")
 	if err != nil {
 		gcmd.Println(gcmd.Warn, "client dial err, exit!")
 		return
 	}
 
 	time.Sleep(1 * time.Second)
-
+	gcmd.Println(gcmd.Ok,"客户端",conn.LocalAddr().String(),conn.RemoteAddr().String())
 	p := &Package{}
-	p.Msg = []byte{1, 2, 3}
+	p.Msg = []byte("get 12345")
 	x := p.Pack()
-	fmt.Println("x:", x)
+	// fmt.Println("x:", x)
 
-	b := []byte{0, 0, 0, 3, 184, 77, 142, 166, 1, 2, 3, 4, 5, 6, 0, 0, 0, 3, 184, 77, 142, 166, 7, 8, 9, 10, 11, 12}
+	// b := []byte{0, 0, 0, 3, 184, 77, 142, 166, 1, 2, 3, 4, 5, 6, 0, 0, 0, 3, 184, 77, 142, 166, 7, 8, 9, 10, 11, 12}
 
 	// b := p.Pack()
 	// gcmd.Println(gcmd.Ok, b)
-	conn.Write(b)
-	conn.Write(b)
-	// for i := 0; i < 1; i++ {
-	// 	p.Msg = append(p.Msg, []byte(fmt.Sprintf("%d", i))...)
-	// }
-	// b = p.Pack()
+	conn.Write(x)
+	
 
-	// conn.Write(b)
+	defer conn.Close()
 
 }

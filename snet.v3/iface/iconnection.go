@@ -7,4 +7,5 @@ type IConnection interface {
 	OnDisConnect(*net.TCPConn, string)
 	OnRecvMessage(*net.TCPConn, []byte)
 	OnSendMessage(*net.TCPConn)
+	OnLocalCommand(*net.TCPConn, []byte, []byte)
 }

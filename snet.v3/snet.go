@@ -1,6 +1,7 @@
 package snet
 
 import (
+	"context"
 	"fmt"
 	"gcom/gcmd"
 	"io"
@@ -9,21 +10,25 @@ import (
 	"snet/snet.v3/iface"
 )
 
-type Snet struct {
-	IP   string
-	Port int
-	Conn iface.IConnection
+type snet struct {
+	ip     string
+	port   string
+	conn   iface.IConnection
+	onEixt chan bool
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
-func NewServer(ip string, port int) iface.ISnet {
-	return &Snet{
-		IP:   ip,
-		Port: port,
+func NewServer(ip string, port string) iface.ISnet {
+	return &snet{
+		ip:   ip,
+		port: port,
 	}
 }
 
-func (s *Snet) Serve() {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", s.IP, s.Port))
+func (s *snet) Serve() {
+
+	tcpAddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%s", s.ip, s.port))
 	if err != nil {
 		gcmd.Println(gcmd.Err, "server tcp addr err:", err)
 		return
@@ -34,32 +39,44 @@ func (s *Snet) Serve() {
 		return
 	}
 
-	go func() {
+	s.ctx, s.cancel = context.WithCancel(context.Background())
+
+	go func(ctx context.Context) {
+
 		for {
+			select {
+			case <-ctx.Done():
+				gcmd.Println(gcmd.Err, "snet server exit:")
+				defer l.Close()
+				return
+			default:
+			}
+
 			conn, err := l.AcceptTCP()
 			if err != nil {
 				gcmd.Println(gcmd.Err, "server accept tcp err:", err)
 				// TODO 客户端断开连接
 				if err == io.EOF {
-					s.Conn.OnDisConnect(conn, "client close connection")
+					s.conn.OnDisConnect(conn, "client close connection")
 					continue
 				}
-				s.Conn.OnDisConnect(conn, err.Error())
+				s.conn.OnDisConnect(conn, err.Error())
 				continue
 			}
 			// TODO 客户端连接
-			s.Conn.OnConnect(conn)
+			s.conn.OnConnect(conn)
 
 			// TODO 连接处理协程
-			go s.NewConnection(conn)
+			go s.NewConnection(ctx, conn)
+
 		}
-	}()
+	}(s.ctx)
 }
 
-func (s *Snet) Stop() {
-
+func (s *snet) Stop() {
+	s.cancel()
 }
 
-func (s *Snet) AddConnection(connection iface.IConnection) {
-	s.Conn = connection
+func (s *snet) AddConnection(connection iface.IConnection) {
+	s.conn = connection
 }
