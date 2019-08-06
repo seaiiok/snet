@@ -1,7 +1,8 @@
-package clients
+package snetclient
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 
@@ -16,15 +17,19 @@ type IClient interface {
 }
 
 type client struct {
+	ip     string
+	port   string
 	ctx    context.Context
 	cancel context.CancelFunc
 	clt    IClient
 }
 
-func NewClient(clt IClient) *client {
+func NewClient(ip string, port string, clt IClient) *client {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &client{
+		ip:     ip,
+		port:   port,
 		ctx:    ctx,
 		cancel: cancel,
 		clt:    clt,
@@ -33,7 +38,7 @@ func NewClient(clt IClient) *client {
 }
 
 func (this *client) Client_Test() {
-	conn, err := net.Dial("tcp", ":496")
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", this.ip, this.port))
 	if err != nil {
 		this.clt.OnDisConnect(conn, "client dial err, exit!")
 		conn.Close()
