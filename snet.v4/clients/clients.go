@@ -73,7 +73,7 @@ func (this *client) remoteConnHandle(ctx context.Context, cancel context.CancelF
 	headBytes := make([]byte, 0)
 	endByte := make([]byte, 1)
 
-	p := &snet.Package{}
+	p := &packet.Package{}
 
 	go func() {
 		select {

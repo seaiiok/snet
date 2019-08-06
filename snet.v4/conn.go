@@ -5,7 +5,7 @@ import (
 	"io"
 	"net"
 	"time"
-	"github.com/snet/snet.v4/packet"
+	"github.com/seaiiok/snet/snet.v4/packet"
 )
 
 func (this *snet) newConnection(conn *net.TCPConn) {
