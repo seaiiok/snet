@@ -1,4 +1,4 @@
-package snet
+package snet // import "snet.v4"
 
 import (
 	"context"

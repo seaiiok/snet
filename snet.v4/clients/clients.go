@@ -4,7 +4,8 @@ import (
 	"context"
 	"io"
 	"net"
-	"time"
+
+	"snet.v4/packet"
 )
 
 type IClient interface {
@@ -17,28 +18,29 @@ type IClient interface {
 type client struct {
 	ctx    context.Context
 	cancel context.CancelFunc
-	conn   IClient
+	clt    IClient
 }
 
-func NewClient(clt IClient) IClient {
+func NewClient(clt IClient) *client {
 	ctx, cancel := context.WithCancel(context.Background())
-	c := &client{
+
+	return &client{
 		ctx:    ctx,
 		cancel: cancel,
+		clt:    clt,
 	}
-	c.Client_Test()
-	return clt
+
 }
 
 func (this *client) Client_Test() {
 	conn, err := net.Dial("tcp", ":496")
 	if err != nil {
-		this.conn.OnDisConnect(conn, "client dial err, exit!")
+		this.clt.OnDisConnect(conn, "client dial err, exit!")
 		conn.Close()
 		return
 	}
 
-	this.conn.OnConnect(conn)
+	this.clt.OnConnect(conn)
 
 	go this.newConnection(conn)
 
@@ -47,7 +49,7 @@ func (this *client) Client_Test() {
 func (this *client) newConnection(conn net.Conn) {
 	// defer conn.Close()
 	childCtx, childCancel := context.WithCancel(this.ctx)
-	go this.conn.OnSendMessage(conn)
+	go this.clt.OnSendMessage(conn)
 
 	for {
 		select {
@@ -61,7 +63,7 @@ func (this *client) newConnection(conn net.Conn) {
 		if len(msg) == 0 {
 			continue
 		}
-		go this.conn.OnRecvMessage(conn, msg)
+		go this.clt.OnRecvMessage(conn, msg)
 
 	}
 }
@@ -75,16 +77,6 @@ func (this *client) remoteConnHandle(ctx context.Context, cancel context.CancelF
 
 	p := &packet.Package{}
 
-	go func() {
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(60 * time.Second):
-			this.conn.OnDisConnect(conn, "connection read timeout")
-			cancel()
-		}
-	}()
-
 	for {
 
 		select {
@@ -97,11 +89,11 @@ func (this *client) remoteConnHandle(ctx context.Context, cancel context.CancelF
 		if err != nil {
 			if err == io.EOF {
 				//TODO client close
-				this.conn.OnDisConnect(conn, "client connection close")
+				this.clt.OnDisConnect(conn, "client connection close")
 				cancel()
 				return []byte{}
 			}
-			this.conn.OnDisConnect(conn, err.Error())
+			this.clt.OnDisConnect(conn, err.Error())
 			cancel()
 			return []byte{}
 		}
@@ -137,11 +129,11 @@ func (this *client) remoteConnHandle(ctx context.Context, cancel context.CancelF
 		if err != nil {
 			if err == io.EOF {
 				//TODO client close
-				this.conn.OnDisConnect(conn, "client connection close")
+				this.clt.OnDisConnect(conn, "client connection close")
 				cancel()
 				return []byte{}
 			}
-			this.conn.OnDisConnect(conn, err.Error())
+			this.clt.OnDisConnect(conn, err.Error())
 			cancel()
 			return []byte{}
 		}
@@ -154,11 +146,11 @@ func (this *client) remoteConnHandle(ctx context.Context, cancel context.CancelF
 		if err != nil {
 			if err == io.EOF {
 				//TODO client close
-				this.conn.OnDisConnect(conn, "client connection close")
+				this.clt.OnDisConnect(conn, "client connection close")
 				cancel()
 				return []byte{}
 			}
-			this.conn.OnDisConnect(conn, err.Error())
+			this.clt.OnDisConnect(conn, err.Error())
 			cancel()
 			return []byte{}
 		}

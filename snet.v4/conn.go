@@ -4,8 +4,8 @@ import (
 	"context"
 	"io"
 	"net"
-	"time"
-	"github.com/seaiiok/snet/snet.v4/packet"
+
+	"snet.v4/packet"
 )
 
 func (this *snet) newConnection(conn *net.TCPConn) {
@@ -38,16 +38,6 @@ func (this *snet) remoteConnHandle(ctx context.Context, cancel context.CancelFun
 	endByte := make([]byte, 1)
 
 	p := &packet.Package{}
-
-	go func() {
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(60 * time.Second):
-			this.conn.OnDisConnect(conn, "connection read timeout")
-			cancel()
-		}
-	}()
 
 	for {
 
