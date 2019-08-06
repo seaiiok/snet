@@ -1,81 +1,75 @@
 package snet
 
 import (
-	"bytes"
-	"fmt"
 	"gcom/gcmd"
 	"net"
-	"strconv"
 	"testing"
 	"time"
 )
 
 func TestSnet(t *testing.T) {
+
+	//启动Tcp服务器
 	go serverGo()
+
+	time.Sleep(1 * time.Second)
+
+	//启动客户端
 	go clientGo()
+
 	select {}
 }
 
+type server struct {
+}
+
 func serverGo() {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%s", "127.0.0.1", "496"))
-	if err != nil {
-		gcmd.Println(gcmd.Err, "server tcp addr err:", err)
-		return
-	}
-
-	l, err := net.ListenTCP("tcp", tcpAddr)
-	if err != nil {
-		gcmd.Println(gcmd.Err, "server listen tcp err:", err)
-		return
-	}
-
-	go func() {
-		conn, err := l.AcceptTCP()
-		if err != nil {
-			gcmd.Println(gcmd.Err, "server listen tcp err:", err)
-			return
-		}
-		go connhandle(conn)
-	}()
+	s := NewServer("localhost", "496", &server{})
+	s.Serve()
 
 }
 
+func (this *server) OnConnect(conn *net.TCPConn) {
+	gcmd.Println(gcmd.Info, "客户端连接:", conn.RemoteAddr())
+}
+
+func (this *server) OnDisConnect(conn *net.TCPConn, reason string) {
+	gcmd.Println(gcmd.Info, "客户端断开连接:", conn.RemoteAddr(), "原因:", reason)
+}
+
+func (this *server) OnRecvMessage(conn *net.TCPConn, msg []byte) {
+	gcmd.Println(gcmd.Ok, "接收客户端消息:", string(msg))
+}
+
+func (this *server) OnSendMessage(conn *net.TCPConn) {
+	p := &Package{}
+
+	msg := []byte("its a test msg!")
+	packMsg, _ := p.Pack(msg)
+
+	conn.Write(packMsg)
+}
+
+type client struct{}
+
+func (this *client) OnConnect(conn net.Conn) {
+
+}
+
+func (this *client) OnDisConnect(conn net.Conn, reason string) {
+
+}
+
+func (this *client) OnRecvMessage(conn net.Conn, msg []byte) {
+
+}
+
+func (this *client) OnSendMessage(conn net.Conn) {
+
+}
+
+// //客户端
 func clientGo() {
-	conn, err := net.Dial("tcp", ":496")
-	if err != nil {
-		gcmd.Println(gcmd.Warn, "client dial err, exit!")
-		return
-	}
-	for i := 0; i < 100; i++ {
-		time.Sleep(1 * time.Second)
-		msg := strconv.Itoa(i)
-		conn.Write([]byte(msg))
-	}
+clients.
 
 }
-
-func connhandle(conn *net.TCPConn) {
-	bs := bytes.Buffer{}
-
-	go func() {
-		for {
-			buf := make([]byte, 512)
-			n, err := conn.Read(buf)
-			if err != nil {
-				gcmd.Println(gcmd.Warn, "client dial err, exit!")
-			}
-
-			bn, err := bs.Write(buf[:n])
-			if err != nil || n != bn {
-				gcmd.Println(gcmd.Warn, "client dial err, exit!")
-			}
-		}
-	}()
-
-	go func(){
-
-	}()
-
-}
-
-

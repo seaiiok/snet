@@ -1,14 +1,50 @@
-package snet
+package clients
 
 import (
 	"context"
 	"io"
 	"net"
 	"time"
-	"github.com/snet/snet.v4/packet"
 )
 
-func (this *snet) newConnection(conn *net.TCPConn) {
+type IClient interface {
+	OnConnect(net.Conn)
+	OnDisConnect(net.Conn, string)
+	OnRecvMessage(net.Conn, []byte)
+	OnSendMessage(net.Conn)
+}
+
+type client struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+	conn   IClient
+}
+
+func NewClient(clt IClient) IClient {
+	ctx, cancel := context.WithCancel(context.Background())
+	c := &client{
+		ctx:    ctx,
+		cancel: cancel,
+	}
+	c.Client_Test()
+	return clt
+}
+
+func (this *client) Client_Test() {
+	conn, err := net.Dial("tcp", ":496")
+	if err != nil {
+		this.conn.OnDisConnect(conn, "client dial err, exit!")
+		conn.Close()
+		return
+	}
+
+	this.conn.OnConnect(conn)
+
+	go this.newConnection(conn)
+
+}
+
+func (this *client) newConnection(conn net.Conn) {
 	// defer conn.Close()
 	childCtx, childCancel := context.WithCancel(this.ctx)
 	go this.conn.OnSendMessage(conn)
@@ -30,14 +66,14 @@ func (this *snet) newConnection(conn *net.TCPConn) {
 	}
 }
 
-func (this *snet) remoteConnHandle(ctx context.Context, cancel context.CancelFunc, conn *net.TCPConn) (msg []byte) {
+func (this *client) remoteConnHandle(ctx context.Context, cancel context.CancelFunc, conn net.Conn) (msg []byte) {
 	// defer conn.Close()
 
 	Onebyte := make([]byte, 1)
 	headBytes := make([]byte, 0)
 	endByte := make([]byte, 1)
 
-	p := &packet.Package{}
+	p := &snet.Package{}
 
 	go func() {
 		select {

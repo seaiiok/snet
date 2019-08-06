@@ -3,22 +3,26 @@ package snet
 import (
 	"context"
 	"fmt"
-	"gcom/gcmd"
 	"io"
 	"net"
-
-	"snet/snet.v4/iface"
 )
 
 type snet struct {
 	ip     string
-	port   int
+	port   string
 	ctx    context.Context
 	cancel context.CancelFunc
-	conn   iface.ISnet
+	conn   ISnet
 }
 
-func NewServer(ip string, port int, s iface.ISnet) *snet {
+type ISnet interface {
+	OnConnect(*net.TCPConn)
+	OnDisConnect(*net.TCPConn, string)
+	OnRecvMessage(*net.TCPConn, []byte)
+	OnSendMessage(*net.TCPConn)
+}
+
+func NewServer(ip string, port string, s ISnet) *snet {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &snet{
 		ip:     ip,
@@ -29,53 +33,48 @@ func NewServer(ip string, port int, s iface.ISnet) *snet {
 	}
 }
 
-func (s *snet) Serve() {
+func (this *snet) Serve() error {
 
-	tcpAddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", s.ip, s.port))
+	tcpAddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%s", this.ip, this.port))
 	if err != nil {
-		gcmd.Println(gcmd.Err, "server tcp addr err:", err)
-		return
+		return err
 	}
 	l, err := net.ListenTCP("tcp", tcpAddr)
 	if err != nil {
-		gcmd.Println(gcmd.Err, "server listen tcp err:", err)
-		return
+		return err
 	}
 
-	s.ctx, s.cancel = context.WithCancel(context.Background())
-
-	go func(ctx context.Context) {
+	go func() {
 
 		for {
 			select {
-			case <-ctx.Done():
-				gcmd.Println(gcmd.Err, "snet server exit:")
+			case <-this.ctx.Done():
 				defer l.Close()
-				return
 			default:
+
 			}
 
 			conn, err := l.AcceptTCP()
 			if err != nil {
-				gcmd.Println(gcmd.Err, "server accept tcp err:", err)
 				// TODO 客户端断开连接
 				if err == io.EOF {
-					s.conn.OnDisConnect(conn, "client close connection")
+					this.conn.OnDisConnect(conn, "client close connection")
 					continue
 				}
-				s.conn.OnDisConnect(conn, err.Error())
+				this.conn.OnDisConnect(conn, err.Error())
 				continue
 			}
 			// TODO 客户端连接
-			s.conn.OnConnect(conn)
+			this.conn.OnConnect(conn)
 
 			// TODO 连接处理协程
-			go s.newConnection(ctx, conn)
+			go this.newConnection(conn)
 
 		}
-	}(s.ctx)
+	}()
+	return nil
 }
 
-func (s *snet) Stop() {
-	s.cancel()
+func (this *snet) Stop() {
+	this.cancel()
 }
