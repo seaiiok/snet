@@ -6,7 +6,7 @@ import (
 	"io"
 	"net"
 
-	"snet.v4/packet"
+	"snet/snet.v4/packet"
 )
 
 type IClient interface {
@@ -37,7 +37,7 @@ func NewClient(ip string, port string, clt IClient) *client {
 
 }
 
-func (this *client) Client_Test() {
+func (this *client) Serve() {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", this.ip, this.port))
 	if err != nil {
 		this.clt.OnDisConnect(conn, "client dial err, exit!")
