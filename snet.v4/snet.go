@@ -1,4 +1,4 @@
-package snet // import "snet.v4"
+package snet
 
 import (
 	"context"
@@ -50,6 +50,7 @@ func (this *snet) Serve() error {
 			select {
 			case <-this.ctx.Done():
 				defer l.Close()
+				return
 			default:
 
 			}

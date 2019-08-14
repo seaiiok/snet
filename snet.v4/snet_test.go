@@ -1,13 +1,15 @@
 package snet
 
 import (
+	"collector/api"
 	"net"
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/seaiiok/gcom/gcmd"
-	"snet.v4/clients"
-	"snet.v4/packet"
+	"snet/snet.v4/clients"
+	"snet/snet.v4/packet"
 )
 
 func TestSnet(t *testing.T) {
@@ -18,7 +20,7 @@ func TestSnet(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	//启动客户端
-	go clientGo()
+	// go clientGo()
 
 	select {}
 }
@@ -46,9 +48,16 @@ func (this *server) OnRecvMessage(conn *net.TCPConn, msg []byte) {
 
 func (this *server) OnSendMessage(conn *net.TCPConn) {
 	p := &packet.Package{}
+	pm := &api.Msg{
+		Cmd:  100,
+		File: "c:/faf",
+		Md5:  "fjisod8902309",
+		Msg:  []byte("its a test msg!"),
+	}
 
-	msg := []byte("its a test msg!")
-	packMsg, _ := p.Pack(msg)
+	b, _ := proto.Marshal(pm)
+
+	packMsg, _ := p.Pack(b)
 
 	conn.Write(packMsg)
 }
@@ -78,6 +87,6 @@ func (this *client) OnSendMessage(conn net.Conn) {
 
 // //客户端
 func clientGo() {
-	c := clients.NewClient(&client{})
-	c.Client_Test()
+	x := snetclient.NewClient("127.0.0.1", "496", &client{})
+	x.Serve()
 }

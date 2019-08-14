@@ -37,18 +37,16 @@ func NewClient(ip string, port string, clt IClient) *client {
 
 }
 
-func (this *client) Serve() {
+func (this *client) Serve() error {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", this.ip, this.port))
 	if err != nil {
-		this.clt.OnDisConnect(conn, "client dial err, exit!")
-		conn.Close()
-		return
+		return err
 	}
 
 	this.clt.OnConnect(conn)
 
 	go this.newConnection(conn)
-
+	return nil
 }
 
 func (this *client) newConnection(conn net.Conn) {
